@@ -3,17 +3,34 @@
 
 #include <tonc.h>
 
+#include "player.h"
 #include "sprites.h"
 
 OBJ_ATTR obj_buffer[128];
 
-int x = 64;
-int y = 64;
 u32 tileId = 0;
 u32 palleteBank = 0;
 
-// Object attributes are stored in the 1 entry of OAM objects
-OBJ_ATTR *objectAttributes = &obj_buffer[0];
+// Game objects
+Player player = {
+    x: 64,
+    y: 64,
+    width: 16,
+    height: 16,
+    direction: 1
+};
+
+// Pointer to OAM for the Player Object
+OBJ_ATTR *playerOamObj = &obj_buffer[0];
+
+void updateOam()
+{
+    // Update Player's position
+    obj_set_pos(playerOamObj, player.x, player.y);
+
+    // Write buffer back to the real OAM
+    oam_copy(oam_mem, obj_buffer, 1);
+}
 
 void init()
 {
@@ -32,9 +49,9 @@ void init()
     // Set Video mode and enable objects
     REG_DISPCNT = DCNT_OBJ | DCNT_OBJ_1D;
 
-    obj_set_attr(objectAttributes, ATTR0_SQUARE, ATTR1_SIZE_16, ATTR2_PALBANK(palleteBank) | tileId);
+    obj_set_attr(playerOamObj, ATTR0_SQUARE, ATTR1_SIZE_16, ATTR2_PALBANK(palleteBank) | tileId);
 
-    obj_set_pos(objectAttributes, x, y);
+    obj_set_pos(playerOamObj, player.x, player.y);
 }
 
 void gameLoop()
@@ -46,14 +63,18 @@ void gameLoop()
     key_poll();
 
     // Handle input
-    if (key_held(KEY_RIGHT) && x < SCREEN_WIDTH - 16)
-        ++x;
-    if (key_held(KEY_LEFT) && x > 0)
-        --x;
-    if (key_held(KEY_UP) && y > 0)
-        --y;
-    if (key_held(KEY_DOWN) && y < SCREEN_HEIGHT - 16)
-        ++y;
+    if (key_held(KEY_RIGHT) && player.x < SCREEN_WIDTH - 16) {
+        ++player.x;
+        BIT_CLEAR(playerOamObj->attr1, ATTR1_HFLIP);
+    }
+    if (key_held(KEY_LEFT) && player.x > 0) {
+        --player.x;
+        BIT_SET(playerOamObj->attr1, ATTR1_HFLIP);    // Flip sprite to face left
+    }
+    if (key_held(KEY_UP) && player.y > 0)
+        --player.y;
+    if (key_held(KEY_DOWN) && player.y < SCREEN_HEIGHT - 16)
+        ++player.y;
 
     // Set Player sprite
 
@@ -66,9 +87,9 @@ void gameLoop()
     // Prevent out of bounds
 
     // Update OAM
-    obj_set_pos(objectAttributes, x, y);
+    updateOam();
 
-    oam_copy(oam_mem, obj_buffer, 1);
+    // TODO: Wait for V-Blank interrupt (probably)
 }
 
 
