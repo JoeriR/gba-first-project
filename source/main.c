@@ -46,13 +46,13 @@ void gameLoop()
     key_poll();
 
     // Handle input
-    if (key_held(KEY_RIGHT))
+    if (key_held(KEY_RIGHT) && x < SCREEN_WIDTH - 16)
         ++x;
-    if (key_held(KEY_LEFT))
+    if (key_held(KEY_LEFT) && x > 0)
         --x;
-    if (key_held(KEY_UP))
+    if (key_held(KEY_UP) && y > 0)
         --y;
-    if (key_held(KEY_DOWN))
+    if (key_held(KEY_DOWN) && y < SCREEN_HEIGHT - 16)
         ++y;
 
     // Set Player sprite
