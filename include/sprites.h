@@ -17,7 +17,7 @@
 #ifndef GRIT_SPRITES_H
 #define GRIT_SPRITES_H
 
-#define spritesTilesLen 128
+#define spritesTilesLen 768
 extern const unsigned short spritesTiles[64];
 
 #define spritesPalLen 512
