@@ -3,6 +3,7 @@
 
 #include <tonc.h>
 
+#include "block_spritedata.h"
 #include "defines.h"
 #include "hitbox.h"
 #include "player.h"
@@ -66,11 +67,18 @@ void init()
     // Copy palette data to VRAM
     tonccpy(pal_obj_mem, spritesPal, spritesPalLen);
 
+    // Copy background data to VRAM
+    tonccpy(&tile_mem[0][0], block_spritedataTiles, block_spritedataTilesLen);
+
+    //      Including palletes
+    tonccpy(pal_bg_mem, block_spritedataPal, block_spritedataPalLen);
+
     // Init OAM
     oam_init(obj_buffer, OAM_BUFFER_SIZE);
 
-    // Set Video mode and enable objects
-    REG_DISPCNT = DCNT_OBJ | DCNT_OBJ_1D;
+    // Set Video mode and enable objects AND setup for a 4bpp map
+    REG_BG0CNT = BG_CBB(0) | BG_SBB(30) | BG_4BPP | BG_REG_32x32;
+    REG_DISPCNT = DCNT_OBJ | DCNT_OBJ_1D | DCNT_MODE0 | DCNT_BG0;
 
     obj_set_attr(playerOamObj, ATTR0_SQUARE, ATTR1_SIZE_16, ATTR2_PALBANK(palleteBank) | tileId);
     
@@ -79,6 +87,17 @@ void init()
         obj_set_attr(&obj_buffer[i], ATTR0_SQUARE, ATTR1_SIZE_8, ATTR2_PALBANK(palleteBank) | (i+3));
         obj_set_pos(&obj_buffer[i], 400, 400);
     }
+
+    // Fill the entire background with AIR
+    for (int i = 0; i < 32 * 20; ++i) {
+        se_mem[30][i] = 0x02;
+    }
+
+    // Draw some tiles on the background
+    se_mem[30][1 + 32] = 0x04;
+    se_mem[30][2 + 32] = 0x05;
+    se_mem[30][1 + 64] = 0x0C;
+    se_mem[30][2 + 64] = 0x0D;
 
     obj_set_pos(playerOamObj, player.x, player.y);
 }
