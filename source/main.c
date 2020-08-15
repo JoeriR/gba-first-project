@@ -19,7 +19,7 @@ u32 palleteBank = 0;
 
 // Game objects
 Player player = {
-    x: 64,
+    x: 100,
     y: 64,
     width: 16,
     height: 16,
@@ -35,6 +35,15 @@ Player player = {
 // Pointer to OAM for the Player Object
 OBJ_ATTR *playerOamObj = &obj_buffer[0];
 OBJ_ATTR *testProjectileObj = &obj_buffer[1];
+
+// MAP data (should be moved to it's own file sometime)
+
+
+int frameCounter = 0;
+
+// TEMP variables
+int isJumping = true;
+int jumpFrameCounter = 100;
 
 void updateOam()
 {
@@ -93,11 +102,17 @@ void init()
         se_mem[30][i] = 0x02;
     }
 
-    // Draw some tiles on the background
-    se_mem[30][1 + 32] = 0x04;
-    se_mem[30][2 + 32] = 0x05;
-    se_mem[30][1 + 64] = 0x0C;
-    se_mem[30][2 + 64] = 0x0D;
+    const int brickYUpper = 32 * 18;
+    const int brickYLower = 32 * 19;
+
+    // Draw bricks across the floor
+    for (int i = 0; i < 32; i += 2) {
+
+        se_mem[30][i + brickYUpper] = 0x04;
+        se_mem[30][i + 1 + brickYUpper] = 0x05;
+        se_mem[30][i + brickYLower] = 0x0C;
+        se_mem[30][i + 1 + brickYLower] = 0x0D;
+    }
 
     obj_set_pos(playerOamObj, player.x, player.y);
 }
@@ -121,13 +136,12 @@ void gameLoop()
         player.direction = -1;
         BIT_SET(playerOamObj->attr1, ATTR1_HFLIP);    // Flip sprite to face left
     }
-    if (key_is_down(KEY_UP) && player.y > 0)
-        --player.y;
-    if (key_is_down(KEY_DOWN) && player.y < SCREEN_HEIGHT - 16)
-        ++player.y;
+
+    if (key_is_down(KEY_A) && !isJumping)
+        isJumping = true;
 
     // Fire projectile
-    if (key_hit(KEY_A)) {
+    if (key_hit(KEY_B)) {
         
         int projectileX = player.x + 16;
 
@@ -150,6 +164,27 @@ void gameLoop()
         fireProjectile(&projectile);
     }
 
+    // Handle jumping
+    if (isJumping) {
+
+        if (jumpFrameCounter < 20)
+            --player.y;
+        else if (jumpFrameCounter < 25)
+            player.y = player.y;
+        else {
+            ++player.y;
+
+            // Reset jump variables when the Player lands on the ground
+            if (player.y >= 128) {
+                player.y = 128;
+                isJumping = false;
+                jumpFrameCounter = 0;
+            }
+        }
+
+        ++jumpFrameCounter;
+    }
+
     // Set Player sprite
 
     // Update active projectiles
@@ -169,6 +204,8 @@ void gameLoop()
     updateOam();
 
     // TODO: Wait for V-Blank interrupt (probably)
+
+    ++frameCounter;
 }
 
 
